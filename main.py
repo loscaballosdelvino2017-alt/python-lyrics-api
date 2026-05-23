@@ -1,11 +1,22 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import StreamingResponse
+from fastapi.middleware.cors import CORSMiddleware
 from ytmusicapi import YTMusic
 from typing import Optional
 import yt_dlp
 import requests
 
 app = FastAPI()
+
+# Permitir CORS para peticiones desde el navegador (necesario para el test en HTML)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 ytmusic = YTMusic()
 
 def format_lrc_time(ms: int) -> str:
@@ -95,6 +106,10 @@ def download_audio(video_id: str):
             'format': 'bestaudio/best',
             'quiet': True,
             'no_warnings': True,
+            'nocheckcertificate': True,
+            'extractor_args': {
+                'youtube': ['player_client=android']
+            }
         }
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(f"https://www.youtube.com/watch?v={video_id}", download=False)
