@@ -1,8 +1,22 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import StreamingResponse
+from fastapi.middleware.cors import CORSMiddleware
 from ytmusicapi import YTMusic
 from typing import Optional
+import yt_dlp
+import requests
 
 app = FastAPI()
+
+# Permitir CORS para peticiones desde el navegador (necesario para el test en HTML)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 ytmusic = YTMusic()
 
 def format_lrc_time(ms: int) -> str:
@@ -84,6 +98,38 @@ def get_lyrics(artist: str, title: str):
         
     except Exception as e:
         return {"found": False, "error": str(e)}
+
+@app.get("/download_audio")
+def download_audio(video_id: str):
+    try:
+        ydl_opts = {
+            'format': 'bestaudio/best',
+            'quiet': True,
+            'no_warnings': True,
+        }
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(f"https://www.youtube.com/watch?v={video_id}", download=False)
+            audio_url = info.get('url')
+            if not audio_url:
+                raise HTTPException(status_code=404, detail="Audio URL not found")
+            
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+            }
+            r = requests.get(audio_url, headers=headers, stream=True)
+            if not r.ok:
+                raise HTTPException(status_code=r.status_code, detail="Failed to fetch audio stream")
+                
+            def generate_stream():
+                for chunk in r.iter_content(chunk_size=512 * 1024):
+                    yield chunk
+                    
+            return StreamingResponse(
+                generate_stream(),
+                media_type="audio/mpeg"
+            )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
     import uvicorn
