@@ -147,6 +147,14 @@ def download_audio(video_id: str):
 def download_audio_mp3(video_id: str):
     return stream_youtube_audio(video_id)
 
+@app.get("/download_audio/{video_id}")
+def download_audio_path(video_id: str):
+    return stream_youtube_audio(video_id.removesuffix(".mp3"))
+
+@app.get("/audio/{video_id}.mp3")
+def audio_mp3(video_id: str):
+    return stream_youtube_audio(video_id)
+
 if __name__ == "__main__":
     import uvicorn
     # Corre el servidor en el puerto 8000
