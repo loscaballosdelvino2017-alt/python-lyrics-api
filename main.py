@@ -383,6 +383,26 @@ def rhythm_analysis(video_id: str, max_duration: Optional[float] = 240.0):
 def rhythm_analysis_path(video_id: str, max_duration: Optional[float] = 240.0):
     return rhythm_analysis(video_id.removesuffix(".mp3"), max_duration)
 
+@app.get("/analyze_rhythm")
+def analyze_rhythm(video_id: str, max_duration: Optional[float] = 240.0):
+    return rhythm_analysis(video_id, max_duration)
+
+@app.get("/analyze_rhythm/{video_id}")
+def analyze_rhythm_path(video_id: str, max_duration: Optional[float] = 240.0):
+    return rhythm_analysis(video_id.removesuffix(".mp3"), max_duration)
+
+@app.get("/rhythm-analysis")
+def rhythm_analysis_dash(video_id: str, max_duration: Optional[float] = 240.0):
+    return rhythm_analysis(video_id, max_duration)
+
+@app.get("/api/rhythm_analysis")
+def api_rhythm_analysis(video_id: str, max_duration: Optional[float] = 240.0):
+    return rhythm_analysis(video_id, max_duration)
+
+@app.get("/health")
+def health():
+    return {"ok": True, "service": "python-lyrics-api", "rhythmAnalysis": True}
+
 if __name__ == "__main__":
     import uvicorn
     # Corre el servidor en el puerto 8000
