@@ -99,8 +99,7 @@ def get_lyrics(artist: str, title: str):
     except Exception as e:
         return {"found": False, "error": str(e)}
 
-@app.get("/download_audio")
-def download_audio(video_id: str):
+def stream_youtube_audio(video_id: str):
     try:
         ydl_opts = {
             'format': 'bestaudio/best',
@@ -111,6 +110,11 @@ def download_audio(video_id: str):
                 'youtube': ['player_client=android']
             }
         }
+        
+        import os
+        if os.path.exists("cookies.txt"):
+            ydl_opts['cookiefile'] = 'cookies.txt'
+            
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(f"https://www.youtube.com/watch?v={video_id}", download=False)
             audio_url = info.get('url')
@@ -134,6 +138,14 @@ def download_audio(video_id: str):
             )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/download_audio")
+def download_audio(video_id: str):
+    return stream_youtube_audio(video_id)
+
+@app.get("/download_audio/{video_id}.mp3")
+def download_audio_mp3(video_id: str):
+    return stream_youtube_audio(video_id)
 
 if __name__ == "__main__":
     import uvicorn
