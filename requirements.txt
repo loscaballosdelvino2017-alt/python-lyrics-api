@@ -3,4 +3,5 @@ uvicorn
 ytmusicapi
 yt-dlp
 requests
-
+numpy
+imageio-ffmpeg
