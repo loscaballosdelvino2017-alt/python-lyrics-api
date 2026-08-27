@@ -731,9 +731,9 @@ def stream_youtube_audio(video_id: str):
         
         # 1. Fallback: Cobalt
         try:
-            req = requests.post("https://co.wuk.sh/api/json", json={"url": f"https://www.youtube.com/watch?v={video_id}", "isAudioOnly": True, "aFormat": "mp3"}, timeout=5)
+            req = requests.post("https://co.wuk.sh/api/json", json={"url": f"https://www.youtube.com/watch?v={video_id}", "isAudioOnly": True, "aFormat": "mp3"}, timeout=10)
             if req.status_code == 200 and req.json().get("url"):
-                r = requests.get(req.json()["url"], stream=True, timeout=10)
+                r = requests.get(req.json()["url"], stream=True, timeout=60)
                 if r.ok:
                     def gen():
                         for c in r.iter_content(chunk_size=512*1024): yield c
@@ -744,12 +744,12 @@ def stream_youtube_audio(video_id: str):
         # 2. Fallback: Invidious
         for inv_host in ["https://inv.tux.pizza", "https://invidious.nerdvpn.de", "https://invidious.slipfox.xyz"]:
             try:
-                res = requests.get(f"{inv_host}/api/v1/videos/{video_id}", timeout=5)
+                res = requests.get(f"{inv_host}/api/v1/videos/{video_id}", timeout=10)
                 data = res.json()
                 if data.get("formatStreams"):
                     audio_streams = [s for s in data["formatStreams"] if s["type"].startswith("audio")]
                     if audio_streams:
-                        r = requests.get(audio_streams[0]["url"], stream=True, timeout=10)
+                        r = requests.get(audio_streams[0]["url"], stream=True, timeout=60)
                         if r.ok:
                             def gen():
                                 for c in r.iter_content(chunk_size=512*1024): yield c
@@ -760,10 +760,10 @@ def stream_youtube_audio(video_id: str):
         # 3. Fallback: RapidAPI
         try:
             rapid_api_key = "ca2070ca95msh581ae5a2dbb312dp11a994jsnecb211fa4b48"
-            resp = requests.get(f"https://youtube-mp36.p.rapidapi.com/dl?id={video_id}", headers={"X-RapidAPI-Key": rapid_api_key, "X-RapidAPI-Host": "youtube-mp36.p.rapidapi.com"}, timeout=10)
+            resp = requests.get(f"https://youtube-mp36.p.rapidapi.com/dl?id={video_id}", headers={"X-RapidAPI-Key": rapid_api_key, "X-RapidAPI-Host": "youtube-mp36.p.rapidapi.com"}, timeout=20)
             data = resp.json()
             if data.get("status") == "ok" and data.get("link"):
-                r = requests.get(data["link"], stream=True, timeout=10)
+                r = requests.get(data["link"], stream=True, timeout=60)
                 if r.ok:
                     def gen():
                         for c in r.iter_content(chunk_size=512*1024): yield c
@@ -771,7 +771,7 @@ def stream_youtube_audio(video_id: str):
         except Exception:
             pass
             
-        raise HTTPException(status_code=500, detail="All download methods failed")
+        raise e
 
 @app.get("/download_audio")
 def download_audio(video_id: str):
