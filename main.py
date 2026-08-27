@@ -793,14 +793,23 @@ def audio_mp3(video_id: str):
 def rhythm_analysis(video_id: str, max_duration: Optional[float] = 240.0):
     downloaded = None
     try:
-        info = get_youtube_audio_info(video_id)
         limited_duration = max(30.0, min(float(max_duration or 240.0), 360.0))
+        audio = None
+        sample_rate = None
+        info = {"duration": 0, "title": video_id}
+
+        # Step 1: Try getting audio info via yt-dlp (+ its fallbacks)
         try:
+            info = get_youtube_audio_info(video_id)
             audio, sample_rate = decode_audio_from_url(
                 info["audio_url"],
                 max_duration=limited_duration,
             )
-        except HTTPException:
+        except Exception:
+            pass  # Fall through to download method
+
+        # Step 2: If streaming failed, try downloading the file (+ its RapidAPI fallback)
+        if audio is None:
             downloaded = download_youtube_audio_file(video_id)
             info["duration"] = downloaded["duration"] or info["duration"]
             info["title"] = downloaded["title"] or info["title"]
@@ -809,6 +818,7 @@ def rhythm_analysis(video_id: str, max_duration: Optional[float] = 240.0):
                 max_duration=limited_duration,
                 is_url=False,
             )
+
         result = analyze_waveform(audio, sample_rate, info["duration"])
         result["title"] = info["title"]
         return result
