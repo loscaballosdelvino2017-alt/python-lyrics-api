@@ -32,15 +32,14 @@ def get_youtube_audio_info(video_id: str):
         'format': 'bestaudio/best',
         'quiet': True,
         'no_warnings': True,
-        'nocheckcertificate': True,
-        'extractor_args': {
-            'youtube': ['player_client=android']
-        }
+        'nocheckcertificate': True
     }
 
     import os
     if os.path.exists("cookies.txt"):
         ydl_opts['cookiefile'] = 'cookies.txt'
+    elif os.path.exists("www.youtube.com_cookies.txt"):
+        ydl_opts['cookiefile'] = 'www.youtube.com_cookies.txt'
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(f"https://www.youtube.com/watch?v={video_id}", download=False)
@@ -105,14 +104,13 @@ def download_youtube_audio_file(video_id: str):
         'quiet': True,
         'no_warnings': True,
         'nocheckcertificate': True,
-        'noplaylist': True,
-        'extractor_args': {
-            'youtube': ['player_client=android']
-        }
+        'noplaylist': True
     }
 
     if os.path.exists("cookies.txt"):
         ydl_opts['cookiefile'] = 'cookies.txt'
+    elif os.path.exists("www.youtube.com_cookies.txt"):
+        ydl_opts['cookiefile'] = 'www.youtube.com_cookies.txt'
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -634,15 +632,14 @@ def stream_youtube_audio(video_id: str):
             'format': 'bestaudio/best',
             'quiet': True,
             'no_warnings': True,
-            'nocheckcertificate': True,
-            'extractor_args': {
-                'youtube': ['player_client=android']
-            }
+            'nocheckcertificate': True
         }
         
         import os
         if os.path.exists("cookies.txt"):
             ydl_opts['cookiefile'] = 'cookies.txt'
+        elif os.path.exists("www.youtube.com_cookies.txt"):
+            ydl_opts['cookiefile'] = 'www.youtube.com_cookies.txt'
             
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(f"https://www.youtube.com/watch?v={video_id}", download=False)
