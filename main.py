@@ -88,6 +88,54 @@ def get_youtube_audio_info(video_id: str):
             
         raise e
 
+
+@app.get("/debug_fallback/{video_id}")
+def debug_fallback(video_id: str):
+    """Test each fallback individually and report results"""
+    import requests
+    results = {"video_id": video_id, "fallbacks": {}}
+    
+    # Test yt-dlp
+    try:
+        info = get_youtube_audio_info(video_id)
+        results["fallbacks"]["ytdlp"] = {"status": "OK", "url": info["audio_url"][:80]}
+    except Exception as e:
+        results["fallbacks"]["ytdlp"] = {"status": "FAILED", "error": str(e)[:150]}
+    
+    # Test Cobalt
+    try:
+        req = requests.post("https://co.wuk.sh/api/json", json={"url": f"https://www.youtube.com/watch?v={video_id}", "isAudioOnly": True, "aFormat": "mp3"}, timeout=10)
+        results["fallbacks"]["cobalt"] = {"status": "OK" if req.status_code == 200 and req.json().get("url") else "NO_URL", "response": str(req.json())[:150]}
+    except Exception as e:
+        results["fallbacks"]["cobalt"] = {"status": "FAILED", "error": str(e)[:150]}
+    
+    # Test Invidious
+    for inv_host in ["https://inv.tux.pizza", "https://invidious.nerdvpn.de", "https://invidious.slipfox.xyz"]:
+        try:
+            res = requests.get(f"{inv_host}/api/v1/videos/{video_id}", timeout=10)
+            data = res.json()
+            has_audio = bool(data.get("formatStreams"))
+            results["fallbacks"][inv_host] = {"status": "OK" if has_audio else "NO_STREAMS", "streams": len(data.get("formatStreams", []))}
+        except Exception as e:
+            results["fallbacks"][inv_host] = {"status": "FAILED", "error": str(e)[:150]}
+    
+    # Test RapidAPI
+    try:
+        rapid_api_key = "ca2070ca95msh581ae5a2dbb312dp11a994jsnecb211fa4b48"
+        headers = {"X-RapidAPI-Key": rapid_api_key, "X-RapidAPI-Host": "youtube-mp36.p.rapidapi.com"}
+        resp = requests.get(f"https://youtube-mp36.p.rapidapi.com/dl?id={video_id}", headers=headers, timeout=20)
+        data = resp.json()
+        if data.get("status") == "ok" and data.get("link"):
+            # Test if the link is downloadable
+            head = requests.head(data["link"], timeout=10)
+            results["fallbacks"]["rapidapi"] = {"status": "OK", "title": data.get("title"), "link_status": head.status_code, "filesize": data.get("filesize")}
+        else:
+            results["fallbacks"]["rapidapi"] = {"status": "NO_LINK", "response": str(data)[:150]}
+    except Exception as e:
+        results["fallbacks"]["rapidapi"] = {"status": "FAILED", "error": str(e)[:150]}
+    
+    return results
+
 def decode_audio_from_url(audio_url: str, max_duration: float = 240.0, sample_rate: int = 22050):
     return decode_audio_source(audio_url, max_duration=max_duration, sample_rate=sample_rate, is_url=True)
 
