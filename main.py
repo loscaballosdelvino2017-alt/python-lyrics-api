@@ -101,6 +101,27 @@ def debug_fallback(video_id: str):
     
     return results
 
+@app.get("/debug_rapidapi")
+def debug_rapidapi():
+    import requests
+    rapid_api_key = "ca2070ca95msh581ae5a2dbb312dp11a994jsnecb211fa4b48"
+    headers = {"X-RapidAPI-Key": rapid_api_key, "X-RapidAPI-Host": "youtube-mp36.p.rapidapi.com"}
+    try:
+        resp = requests.get("https://youtube-mp36.p.rapidapi.com/dl?id=XFAXHx3odOg", headers=headers, timeout=20)
+        data = resp.json()
+        if "link" in data:
+            _browser_headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Accept': '*/*',
+                'Accept-Language': 'en-US,en;q=0.9',
+                'Referer': 'https://www.youtube.com/',
+            }
+            r = requests.get(data["link"], headers=_browser_headers, stream=True, timeout=10)
+            return {"rapidapi_status": resp.status_code, "link": data["link"], "download_status": r.status_code}
+        return {"rapidapi_status": resp.status_code, "data": data}
+    except Exception as e:
+        return {"error": str(e)}
+
 def decode_audio_from_url(audio_url: str, max_duration: float = 240.0, sample_rate: int = 22050):
     return decode_audio_source(audio_url, max_duration=max_duration, sample_rate=sample_rate, is_url=True)
 
