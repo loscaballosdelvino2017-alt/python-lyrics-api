@@ -40,6 +40,8 @@ def get_youtube_audio_info(video_id: str):
         ydl_opts['cookiefile'] = 'cookies.txt'
     elif os.path.exists("www.youtube.com_cookies.txt"):
         ydl_opts['cookiefile'] = 'www.youtube.com_cookies.txt'
+    elif os.path.exists("/etc/secrets/cookies.txt"):
+        ydl_opts['cookiefile'] = '/etc/secrets/cookies.txt'
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(f"https://www.youtube.com/watch?v={video_id}", download=False)
@@ -111,6 +113,8 @@ def download_youtube_audio_file(video_id: str):
         ydl_opts['cookiefile'] = 'cookies.txt'
     elif os.path.exists("www.youtube.com_cookies.txt"):
         ydl_opts['cookiefile'] = 'www.youtube.com_cookies.txt'
+    elif os.path.exists("/etc/secrets/cookies.txt"):
+        ydl_opts['cookiefile'] = '/etc/secrets/cookies.txt'
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -640,6 +644,8 @@ def stream_youtube_audio(video_id: str):
             ydl_opts['cookiefile'] = 'cookies.txt'
         elif os.path.exists("www.youtube.com_cookies.txt"):
             ydl_opts['cookiefile'] = 'www.youtube.com_cookies.txt'
+        elif os.path.exists("/etc/secrets/cookies.txt"):
+            ydl_opts['cookiefile'] = '/etc/secrets/cookies.txt'
             
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(f"https://www.youtube.com/watch?v={video_id}", download=False)
