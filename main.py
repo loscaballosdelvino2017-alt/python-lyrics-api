@@ -51,41 +51,6 @@ def get_youtube_audio_info(video_id: str):
                 "title": info.get("title") or video_id,
             }
     except Exception as e:
-        import requests
-        
-        # 1. Fallback: Cobalt (Instancia pública si existe, o cambiar por tu propio host)
-        try:
-            cobalt_host = "https://co.wuk.sh" # Reemplazar con una instancia viva de Cobalt
-            req = requests.post(f"{cobalt_host}/api/json", json={"url": f"https://www.youtube.com/watch?v={video_id}", "isAudioOnly": True, "aFormat": "mp3"}, timeout=5)
-            if req.status_code == 200 and req.json().get("url"):
-                return {"audio_url": req.json()["url"], "duration": 0, "title": video_id}
-        except Exception:
-            pass
-
-        # 2. Fallback: Invidious (Prueba un par de instancias públicas conocidas)
-        invidious_instances = ["https://inv.tux.pizza", "https://invidious.nerdvpn.de", "https://invidious.slipfox.xyz"]
-        for inv_host in invidious_instances:
-            try:
-                res = requests.get(f"{inv_host}/api/v1/videos/{video_id}", timeout=5)
-                data = res.json()
-                if data.get("formatStreams"):
-                    audio_streams = [s for s in data["formatStreams"] if s["type"].startswith("audio")]
-                    if audio_streams:
-                        return {"audio_url": audio_streams[0]["url"], "duration": float(data.get("lengthSeconds") or 0), "title": data.get("title") or video_id}
-            except Exception:
-                continue
-
-        # 3. Fallback final: RapidAPI
-        try:
-            rapid_api_key = "ca2070ca95msh581ae5a2dbb312dp11a994jsnecb211fa4b48"
-            headers = {"X-RapidAPI-Key": rapid_api_key, "X-RapidAPI-Host": "youtube-mp36.p.rapidapi.com"}
-            resp = requests.get(f"https://youtube-mp36.p.rapidapi.com/dl?id={video_id}", headers=headers, timeout=10)
-            data = resp.json()
-            if data.get("status") == "ok" and data.get("link"):
-                return {"audio_url": data["link"], "duration": float(data.get("duration") or 0), "title": data.get("title") or video_id}
-        except Exception:
-            pass
-            
         raise e
 
 
@@ -210,37 +175,23 @@ def download_youtube_audio_file(video_id: str):
     except Exception as e:
         import requests
         
+        _browser_headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': '*/*',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'Referer': 'https://www.youtube.com/',
+        }
+        
         def download_and_return(url, dur, title):
             mp3_path = os.path.join(temp_dir, "audio.mp3")
-            r = requests.get(url, stream=True, timeout=20)
+            r = requests.get(url, headers=_browser_headers, stream=True, timeout=60)
             r.raise_for_status()
             with open(mp3_path, 'wb') as f:
                 for chunk in r.iter_content(chunk_size=8192):
                     f.write(chunk)
             return {"path": mp3_path, "temp_dir": temp_dir, "duration": dur, "title": title}
 
-        # 1. Fallback: Cobalt
-        try:
-            req = requests.post("https://co.wuk.sh/api/json", json={"url": f"https://www.youtube.com/watch?v={video_id}", "isAudioOnly": True, "aFormat": "mp3"}, timeout=5)
-            if req.status_code == 200 and req.json().get("url"):
-                return download_and_return(req.json()["url"], 0, video_id)
-        except Exception:
-            pass
-
-        # 2. Fallback: Invidious
-        invidious_instances = ["https://inv.tux.pizza", "https://invidious.nerdvpn.de", "https://invidious.slipfox.xyz"]
-        for inv_host in invidious_instances:
-            try:
-                res = requests.get(f"{inv_host}/api/v1/videos/{video_id}", timeout=5)
-                data = res.json()
-                if data.get("formatStreams"):
-                    audio_streams = [s for s in data["formatStreams"] if s["type"].startswith("audio")]
-                    if audio_streams:
-                        return download_and_return(audio_streams[0]["url"], float(data.get("lengthSeconds") or 0), data.get("title") or video_id)
-            except Exception:
-                continue
-
-        # 3. Fallback: RapidAPI
+        # 1. Fallback: RapidAPI
         try:
             rapid_api_key = "ca2070ca95msh581ae5a2dbb312dp11a994jsnecb211fa4b48"
             headers = {"X-RapidAPI-Key": rapid_api_key, "X-RapidAPI-Host": "youtube-mp36.p.rapidapi.com"}
@@ -777,41 +728,13 @@ def stream_youtube_audio(video_id: str):
     except Exception as e:
         import requests
         
-        # 1. Fallback: Cobalt
-        try:
-            req = requests.post("https://co.wuk.sh/api/json", json={"url": f"https://www.youtube.com/watch?v={video_id}", "isAudioOnly": True, "aFormat": "mp3"}, timeout=10)
-            if req.status_code == 200 and req.json().get("url"):
-                r = requests.get(req.json()["url"], stream=True, timeout=60)
-                if r.ok:
-                    def gen():
-                        for c in r.iter_content(chunk_size=512*1024): yield c
-                    return StreamingResponse(gen(), media_type="audio/mpeg")
-        except Exception:
-            pass
-
-        # 2. Fallback: Invidious
-        for inv_host in ["https://inv.tux.pizza", "https://invidious.nerdvpn.de", "https://invidious.slipfox.xyz"]:
-            try:
-                res = requests.get(f"{inv_host}/api/v1/videos/{video_id}", timeout=10)
-                data = res.json()
-                if data.get("formatStreams"):
-                    audio_streams = [s for s in data["formatStreams"] if s["type"].startswith("audio")]
-                    if audio_streams:
-                        r = requests.get(audio_streams[0]["url"], stream=True, timeout=60)
-                        if r.ok:
-                            def gen():
-                                for c in r.iter_content(chunk_size=512*1024): yield c
-                            return StreamingResponse(gen(), media_type="audio/mpeg")
-            except Exception:
-                continue
-
-        # 3. Fallback: RapidAPI
+        # 1. Fallback: RapidAPI
         try:
             rapid_api_key = "ca2070ca95msh581ae5a2dbb312dp11a994jsnecb211fa4b48"
             resp = requests.get(f"https://youtube-mp36.p.rapidapi.com/dl?id={video_id}", headers={"X-RapidAPI-Key": rapid_api_key, "X-RapidAPI-Host": "youtube-mp36.p.rapidapi.com"}, timeout=20)
             data = resp.json()
             if data.get("status") == "ok" and data.get("link"):
-                r = requests.get(data["link"], stream=True, timeout=60)
+                r = requests.get(data["link"], stream=True, timeout=60, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'})
                 if r.ok:
                     def gen():
                         for c in r.iter_content(chunk_size=512*1024): yield c
