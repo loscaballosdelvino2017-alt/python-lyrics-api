@@ -38,6 +38,12 @@ def get_youtube_audio_info(video_id: str):
             'youtube': ['player_client=android', 'player_skip=webpage']
         }
     }
+    
+    # Auto-detect cookies in Render Secrets or local directory
+    for cookie_path in ["/etc/secrets/cookies.txt", "cookies.txt", "www.youtube.com_cookies.txt"]:
+        if os.path.exists(cookie_path):
+            ydl_opts['cookiefile'] = cookie_path
+            break
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -179,6 +185,12 @@ def download_youtube_audio_file(video_id: str):
             'youtube': ['player_client=android', 'player_skip=webpage']
         }
     }
+    
+    # Auto-detect cookies
+    for cookie_path in ["/etc/secrets/cookies.txt", "cookies.txt", "www.youtube.com_cookies.txt"]:
+        if os.path.exists(cookie_path):
+            ydl_opts['cookiefile'] = cookie_path
+            break
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -734,6 +746,12 @@ def stream_youtube_audio(video_id: str):
                 'youtube': ['player_client=android', 'player_skip=webpage']
             }
         }
+        
+        # Auto-detect cookies
+        for cookie_path in ["/etc/secrets/cookies.txt", "cookies.txt", "www.youtube.com_cookies.txt"]:
+            if os.path.exists(cookie_path):
+                ydl_opts['cookiefile'] = cookie_path
+                break
             
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(f"https://www.youtube.com/watch?v={video_id}", download=False)
