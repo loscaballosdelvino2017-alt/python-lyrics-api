@@ -39,10 +39,14 @@ def get_youtube_audio_info(video_id: str):
         }
     }
     
-    # Auto-detect cookies in Render Secrets or local directory
+    # Auto-detect cookies and copy to writable temp file to avoid Read-only filesystem error on Render
+    import tempfile
+    import shutil
     for cookie_path in ["/etc/secrets/cookies.txt", "cookies.txt", "www.youtube.com_cookies.txt"]:
         if os.path.exists(cookie_path):
-            ydl_opts['cookiefile'] = cookie_path
+            temp_cookie = os.path.join(tempfile.gettempdir(), "temp_yt_cookies.txt")
+            shutil.copy2(cookie_path, temp_cookie)
+            ydl_opts['cookiefile'] = temp_cookie
             break
 
     try:
@@ -186,10 +190,13 @@ def download_youtube_audio_file(video_id: str):
         }
     }
     
-    # Auto-detect cookies
+    # Auto-detect cookies and copy to writable temp file
+    import shutil
     for cookie_path in ["/etc/secrets/cookies.txt", "cookies.txt", "www.youtube.com_cookies.txt"]:
         if os.path.exists(cookie_path):
-            ydl_opts['cookiefile'] = cookie_path
+            temp_cookie = os.path.join(temp_dir, "temp_cookies.txt")
+            shutil.copy2(cookie_path, temp_cookie)
+            ydl_opts['cookiefile'] = temp_cookie
             break
 
     try:
@@ -747,10 +754,14 @@ def stream_youtube_audio(video_id: str):
             }
         }
         
-        # Auto-detect cookies
+        # Auto-detect cookies and copy to writable temp file
+        import tempfile
+        import shutil
         for cookie_path in ["/etc/secrets/cookies.txt", "cookies.txt", "www.youtube.com_cookies.txt"]:
             if os.path.exists(cookie_path):
-                ydl_opts['cookiefile'] = cookie_path
+                temp_cookie = os.path.join(tempfile.gettempdir(), "temp_yt_cookies_stream.txt")
+                shutil.copy2(cookie_path, temp_cookie)
+                ydl_opts['cookiefile'] = temp_cookie
                 break
             
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
