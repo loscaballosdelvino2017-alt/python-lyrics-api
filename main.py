@@ -777,6 +777,7 @@ def stream_youtube_audio(video_id: str):
             raise Exception("YT-dlp stream failed")
     except Exception as e:
         import requests
+        from fastapi.responses import RedirectResponse
         
         # 1. Fallback: RapidAPI
         try:
@@ -784,11 +785,7 @@ def stream_youtube_audio(video_id: str):
             resp = requests.get(f"https://youtube-mp36.p.rapidapi.com/dl?id={video_id}", headers={"X-RapidAPI-Key": rapid_api_key, "X-RapidAPI-Host": "youtube-mp36.p.rapidapi.com"}, timeout=20)
             data = resp.json()
             if data.get("status") == "ok" and data.get("link"):
-                r = requests.get(data["link"], stream=True, timeout=60, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'})
-                if r.ok:
-                    def gen():
-                        for c in r.iter_content(chunk_size=512*1024): yield c
-                    return StreamingResponse(gen(), media_type="audio/mpeg")
+                return RedirectResponse(url=data["link"])
         except Exception:
             pass
             
